@@ -1,0 +1,17 @@
+{
+  "name": "nimbuz-sample-app",
+  "version": "1.0.0",
+  "description": "Small Node.js + MySQL API for testing the Nimbuz platform under load (250 concurrent users).",
+  "private": true,
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0"
+  }
+}

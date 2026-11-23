@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nimbuz POC sample app</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #f3f4f6; color: #1f2937; }
+  header { background: #ea580c; color: #fff; padding: 18px 28px; }
+  header h1 { margin: 0; font-size: 22px; }
+  main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 22px; margin-bottom: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .stat b { display: block; font-size: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  th { background: #fff7ed; }
+  input, select, button { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; }
+  button { background: #ea580c; color: #fff; border: 0; cursor: pointer; }
+  .muted { color: #6b7280; }
+</style>
+</head>
+<body>
+<header><h1>Nimbuz POC sample app</h1><div>Node.js + MySQL test workload</div></header>
+<main>
+  <div class="card">
+    <h3>Served by</h3>
+    <div class="grid" id="info"><span class="muted">Loading...</span></div>
+    <p class="muted">Refresh the page: with several replicas, the instance name changes as the load balancer spreads requests.</p>
+  </div>
+  <div class="card">
+    <h3>Add an item</h3>
+    <form id="add">
+      <input name="name" placeholder="Name" required maxlength="100">
+      <select name="category"></select>
+      <input name="price" type="number" min="0" max="100000" step="0.01" placeholder="Price" required>
+      <button>Add</button>
+      <span id="msg" class="muted"></span>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Latest items</h3>
+    <table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Created</th></tr></thead><tbody id="rows"></tbody></table>
+  </div>
+</main>
+<script>
+const CATEGORIES = ['books', 'electronics', 'grocery', 'home', 'sports', 'toys'];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+document.querySelector('select[name=category]').innerHTML = CATEGORIES.map((c) => `<option>${c}</option>`).join('');
+
+async function load() {
+  const info = await fetch('/api/info').then((r) => r.json());
+  document.getElementById('info').innerHTML = [
+    ['Instance', info.instance], ['Node', info.node], ['Database', info.dbReady ? 'ready' : 'connecting'],
+    ['Requests', info.requests], ['Avg ms', info.avgMs], ['Memory MB', info.memoryMB],
+  ].map(([k, v]) => `<div class="stat"><span class="muted">${k}</span><b>${esc(v)}</b></div>`).join('');
+  const r = await fetch('/api/items?limit=15');
+  const body = r.ok ? await r.json() : { items: [] };
+  document.getElementById('rows').innerHTML = body.items.map((i) =>
+    `<tr><td>${i.id}</td><td>${esc(i.name)}</td><td>${esc(i.category)}</td><td>${i.price}</td><td>${esc(i.created_at)}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">No items yet (database may still be starting).</td></tr>';
+}
+
+document.getElementById('add').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const r = await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: f.get('name'), category: f.get('category'), price: Number(f.get('price')) }) });
+  const out = await r.json();
+  document.getElementById('msg').textContent = r.ok ? `Added #${out.id}` : out.error;
+  if (r.ok) { e.target.reset(); load(); }
+});
+
+load().catch(() => { document.getElementById('info').textContent = 'API not reachable'; });
+</script>
+</body>
+</html>
