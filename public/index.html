@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nimbuz POC sample app</title>
+<title>Codintest</title>
 <style>
   body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #f3f4f6; color: #1f2937; }
   header { background: #ea580c; color: #fff; padding: 18px 28px; }
@@ -21,7 +21,7 @@
 </style>
 </head>
 <body>
-<header><h1>Nimbuz POC sample app</h1><div>Node.js + MySQL test workload</div></header>
+<header><h1>Codintest <span id="ver" style="font-size:14px;opacity:.85"></span></h1><div>Nimbuz POC: Node.js + MySQL test workload</div></header>
 <main>
   <div class="card">
     <h3>Served by</h3>
@@ -50,8 +50,9 @@ document.querySelector('select[name=category]').innerHTML = CATEGORIES.map((c) =
 
 async function load() {
   const info = await fetch('/api/info').then((r) => r.json());
+  document.getElementById('ver').textContent = info.version ? `v${info.version}` : '';
   document.getElementById('info').innerHTML = [
-    ['Instance', info.instance], ['Node', info.node], ['Database', info.dbReady ? 'ready' : 'connecting'],
+    ['Version', info.version || 'n/a'], ['Instance', info.instance], ['Node', info.node], ['Database', info.dbReady ? 'ready' : 'connecting'],
     ['Requests', info.requests], ['Avg ms', info.avgMs], ['Memory MB', info.memoryMB],
   ].map(([k, v]) => `<div class="stat"><span class="muted">${k}</span><b>${esc(v)}</b></div>`).join('');
   const r = await fetch('/api/items?limit=15');

@@ -1,6 +1,6 @@
 {
   "name": "nimbuz-sample-app",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Small Node.js + MySQL API for testing the Nimbuz platform under load (250 concurrent users).",
   "private": true,
   "main": "src/server.js",

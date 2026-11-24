@@ -10,6 +10,9 @@ const os = require('os');
 const path = require('path');
 const { pool, ping, init, CATEGORIES } = require('./db');
 
+// Version from package.json, shown in /health, /api/info and the X-App-Version
+// header, so it's visible which release is live (deploy / rollback tests).
+const { version: APP_VERSION } = require('../package.json');
 const PORT = Number(process.env.PORT) || 8080;
 const SEED_ROWS = Math.max(0, Number(process.env.SEED_ROWS) || 5000);
 const INSTANCE = os.hostname(); // differs per replica: shows load balancing
@@ -27,6 +30,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use((req, res, next) => {
   const t0 = process.hrtime.bigint();
   res.set('X-Instance', INSTANCE);
+  res.set('X-App-Version', APP_VERSION);
   res.on('finish', () => {
     const ms = Number(process.hrtime.bigint() - t0) / 1e6;
     stats.requests++; stats.totalMs += ms; stats.windowRequests++; stats.windowMs += ms;
@@ -42,7 +46,7 @@ const toInt = (v, def, min, max) => {
 };
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', instance: INSTANCE, uptimeSec: Math.round(process.uptime()) });
+  res.json({ status: 'ok', version: APP_VERSION, instance: INSTANCE, uptimeSec: Math.round(process.uptime()) });
 });
 
 app.get('/ready', async (req, res) => {
@@ -56,6 +60,7 @@ app.get('/ready', async (req, res) => {
 
 app.get('/api/info', (req, res) => {
   res.json({
+    version: APP_VERSION,
     instance: INSTANCE,
     startedAt: STARTED_AT,
     node: process.version,
@@ -136,7 +141,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`[app] listening on :${PORT} (instance ${INSTANCE}, node ${process.version})`);
+  console.log(`[app] v${APP_VERSION} listening on :${PORT} (instance ${INSTANCE}, node ${process.version})`);
 });
 server.keepAliveTimeout = 65000; // longer than typical load balancer idle timeouts
 server.headersTimeout = 66000;
